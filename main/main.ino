@@ -129,120 +129,79 @@ void setup() {
 
 
 
+  HttpClient http(client);
 
-  //
-  // New
-  //
-   
-    HttpClient http(client);
-
-    http.beginRequest();
-    int connectStatus = http.startRequest( AIO_SERVER, AIO_REST_API_PORT, "/api/feeds", HTTP_METHOD_GET, NULL);
-    http.sendHeader("x-aio-key", AIO_KEY);
-    http.endRequest();
+  http.beginRequest();
+  int connectStatus = http.startRequest( AIO_SERVER, AIO_REST_API_PORT, "/api/feeds", HTTP_METHOD_GET, NULL);
+  http.sendHeader("x-aio-key", AIO_KEY);
+  http.endRequest();
     
-    if (connectStatus == 0)
+  if (connectStatus == 0)
+  {
+    Serial.println("startedRequest ok");
+  
+    int statusCode = http.responseStatusCode();
+    if (statusCode >= 0)
     {
-      Serial.println("startedRequest ok");
+      Serial.print("Got status code: ");
+      Serial.println(statusCode);
   
-      int statusCode = http.responseStatusCode();
-      if (statusCode >= 0)
+      // Usually you'd check that the response code is 200 or a
+      // similar "success" code (200-299) before carrying on,
+      // but we'll print out whatever response we get
+  
+      int skipHeaderStatus = http.skipResponseHeaders();
+      if (skipHeaderStatus >= 0)
       {
-        Serial.print("Got status code: ");
-        Serial.println(statusCode);
-  
-        // Usually you'd check that the response code is 200 or a
-        // similar "success" code (200-299) before carrying on,
-        // but we'll print out whatever response we get
-  
-        int skipHeaderStatus = http.skipResponseHeaders();
-        if (skipHeaderStatus >= 0)
-        {
-          int bodyLen = http.contentLength();
-          Serial.print("Content length is: ");
-          Serial.println(bodyLen);
-          Serial.println();
-          Serial.println("Body returned follows:");
+        int bodyLen = http.contentLength();
+        Serial.print("Content length is: ");
+        Serial.println(bodyLen);
+        Serial.println();
+        Serial.println("Body returned follows:");
         
-          // Now we've got to the body, so we can print it out
-          unsigned long timeoutStart = millis();
-          char c;
-          // Whilst we haven't timed out & haven't reached the end of the body
-          while ( (http.connected() || http.available()) && ((millis() - timeoutStart) < kNetworkTimeout) )
-          {
-              if (http.available())
-              {
-                  c = http.read();
-                  // Print out this character
-                  Serial.print(c);
-                 
-                  // We read something, reset the timeout counter
-                  timeoutStart = millis();
-              }
-              else
-              {
-                  // We haven't got any data, so let's pause to allow some to
-                  // arrive
-                  delay(kNetworkDelay);
-              }
-          }
-        }
-        else
+        // Now we've got to the body, so we can print it out
+        unsigned long timeoutStart = millis();
+        char c;
+        // Whilst we haven't timed out & haven't reached the end of the body
+        while ( (http.connected() || http.available()) && ((millis() - timeoutStart) < kNetworkTimeout) )
         {
-          Serial.print("Failed to skip response headers: ");
-          Serial.println(skipHeaderStatus);
+          if (http.available())
+          {
+            c = http.read();
+            // Print out this character
+            Serial.print(c);
+                 
+            // We read something, reset the timeout counter
+            timeoutStart = millis();
+          }
+          else
+          {
+             // We haven't got any data, so let's pause to allow some to
+             // arrive
+             delay(kNetworkDelay);
+          }
         }
       }
       else
-      {    
-        Serial.print("Getting response failed: ");
-        Serial.println(statusCode);
+      {
+        Serial.print("Failed to skip response headers: ");
+        Serial.println(skipHeaderStatus);
       }
     }
     else
-    {
-      Serial.print("Connect failed: ");
-      Serial.println(connectStatus);
+    {    
+      Serial.print("Getting response failed: ");
+      Serial.println(statusCode);
     }
-    http.stop();
-  
-    // And just stop, now that we've tried a download
-    while(1);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //
-    // OLD
-    //
-
-    // if you get a connection, report back via serial:
-    if (client.connect(AIO_SERVER, 80)) {
-    
-    Serial.println("connected to server, sending GET request");
-
-    // Make a HTTP request:
-    client.println("GET /api/feeds.json HTTP/1.1");
-    client.print("Host: ");
-    client.println(AIO_SERVER);
-    client.print("x-aio-key: ");
-    client.println(AIO_KEY);
-    client.println("Connection: close");
-    client.println();
   }
-}
+  else
+  {
+    Serial.print("Connect failed: ");
+    Serial.println(connectStatus);
+  }
+  http.stop();
+  
+
 
 void loop() {
 
@@ -256,24 +215,10 @@ void loop() {
 
   delay(1000);
 */
+
   
-  // if there are incoming bytes available
-  // from the server, read them and print them:
-  while (client.available()) {
-    char c = client.read();
-    Serial.write(c);
-  }
-
-  // if the server's disconnected, stop the client:
-  if (!client.connected()) {
-    Serial.println();
-    Serial.println("disconnecting from server.");
-    client.stop();
-
   // do nothing forevermore:
-    while (true);
-  }
-  
+  while (true);
 }
 
 
