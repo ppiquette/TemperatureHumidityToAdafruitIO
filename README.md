@@ -1,4 +1,2 @@
 # adafruitIO
-Connection between Adafruit Feather M0 to Adafruit IO
-
-Test
+Connection between Adafruit Feather M0 with ATWINC1500 (wifi) to Adafruit IO
