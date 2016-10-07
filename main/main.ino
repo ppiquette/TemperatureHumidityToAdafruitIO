@@ -200,7 +200,7 @@ void setup() {
     Serial.println(connectStatus);
   }
   http.stop();
-  
+}  
 
 
 void loop() {
