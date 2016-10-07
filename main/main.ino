@@ -2,7 +2,8 @@
 #include <WiFi101.h>
 #include "DHT.h"
 #include <HttpClient.h>
-
+#include <sstream>
+#include <string>
 
 //
 // DHT22 related 
@@ -34,17 +35,28 @@ int status = WL_IDLE_STATUS;
 // Adafruit IO
 //
 // Adafruit IO
-#define AIO_SERVER        "io.adafruit.com"
-#define AIO_REST_API_PORT 80
-#define AIO_USERNAME      "ppiquette"
-#define AIO_KEY           "51452b0f8beb4ea7a73e7645b81da620"
+#define AIO_SERVER          "io.adafruit.com"
+#define AIO_REST_API_PORT   80
+#define AIO_USERNAME        "ppiquette"
+#define AIO_KEY             "51452b0f8beb4ea7a73e7645b81da620"
+#define AIO_Temperature_ID  "615913"
+#define AIO_Humidity_ID     "616438"
 
 
+// 
+// HTTP Client related
+//
 
-// Initialize the Ethernet client library
-// with the IP address and port of the server
-// that you want to connect to (port 80 is default for HTTP):
+// Number of milliseconds to wait without receiving any data before we give up
+const int kNetworkTimeout = 30*1000;
+// Number of milliseconds to wait if no data is available before trying again
+const int kNetworkDelay = 1000;
+
 WiFiClient client;
+HttpClient http(client);
+
+void DisplayAllFeeds();
+
 
 
 
@@ -86,18 +98,6 @@ void setup() {
   WiFi.setPins(8,7,4,2);
 
 
-  //
-  // HttpClient
-  //
-  
-  // Number of milliseconds to wait without receiving any data before we give up
-  const int kNetworkTimeout = 30*1000;
-  // Number of milliseconds to wait if no data is available before trying again
-  const int kNetworkDelay = 1000;
-
-
-
-
   // check for the presence of the shield:
   if (WiFi.status() == WL_NO_SHIELD) {
     Serial.println("WiFi shield not present");
@@ -116,34 +116,45 @@ void setup() {
     // wait for connection
     delay(1000);
   }
-
-
- 
   Serial.println("Connected to wifi");
   printWifiStatus();
-
   digitalWrite(ONBOARD_RED_LED_PIN, HIGH);
 
+
   
-  Serial.println("\nStarting connection to server...");
+  Serial.println("\Trying connection (GET all feeds) to AdafruitIO server...");
+  DisplayAllFeeds();
+}  
 
 
+void loop() {
 
-  HttpClient http(client);
+
+  int humidity_data = (int)dht.readHumidity();
+  int temperature_data = (int)dht.readTemperature();
+  Serial.print("Temperature: ");
+  Serial.println(temperature_data);
+  Serial.print("Humidity: ");
+  Serial.println(humidity_data);
 
   http.beginRequest();
-  int connectStatus = http.startRequest( AIO_SERVER, AIO_REST_API_PORT, "/api/feeds", HTTP_METHOD_GET, NULL);
+  std::stringstream ss;
+  ss << "/api/feeds/" << AIO_Temperature_ID << "/data";
+  std::string s = ss.str();  
+  int connectStatus = http.startRequest( AIO_SERVER, AIO_REST_API_PORT, s , HTTP_METHOD_POST, NULL);
   http.sendHeader("x-aio-key", AIO_KEY);
   http.endRequest();
-    
-  if (connectStatus == 0)
-  {
-    Serial.println("startedRequest ok");
-  
+
+  delay(1000);
+}
+
+
+void DisplayResponse()
+{
     int statusCode = http.responseStatusCode();
     if (statusCode >= 0)
     {
-      Serial.print("Got status code: ");
+      Serial.print("Status code: ");
       Serial.println(statusCode);
   
       // Usually you'd check that the response code is 200 or a
@@ -193,6 +204,24 @@ void setup() {
       Serial.print("Getting response failed: ");
       Serial.println(statusCode);
     }
+}
+
+
+
+//
+// Get request to retrieve all feeds in my account
+//
+void DisplayAllFeeds()
+{
+  http.beginRequest();
+  int connectStatus = http.startRequest( AIO_SERVER, AIO_REST_API_PORT, "/api/feeds" , HTTP_METHOD_GET, NULL);
+  http.sendHeader("x-aio-key", AIO_KEY);
+  http.endRequest();
+    
+  if (connectStatus == 0)
+  {
+    Serial.println("Request Sent");
+    DisplayResponse();
   }
   else
   {
@@ -200,26 +229,8 @@ void setup() {
     Serial.println(connectStatus);
   }
   http.stop();
-}  
-
-
-void loop() {
-
-/*
-  int humidity_data = (int)dht.readHumidity();
-  int temperature_data = (int)dht.readTemperature();
-  Serial.print("Temperature: ");
-  Serial.println(temperature_data);
-  Serial.print("Humidity: ");
-  Serial.println(humidity_data);
-
-  delay(1000);
-*/
-
-  
-  // do nothing forevermore:
-  while (true);
 }
+
 
 
 
