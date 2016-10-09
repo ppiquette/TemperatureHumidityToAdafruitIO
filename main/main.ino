@@ -2,8 +2,6 @@
 #include <WiFi101.h>
 #include "DHT.h"
 #include <HttpClient.h>
-#include <sstream>
-#include <string>
 
 //
 // DHT22 related 
@@ -122,13 +120,17 @@ void setup() {
 
 
   
-  Serial.println("\Trying connection (GET all feeds) to AdafruitIO server...");
-  DisplayAllFeeds();
+//  Serial.println("\Trying connection (GET all feeds) to AdafruitIO server...");
+//  DisplayAllFeeds();
 }  
 
 
 void loop() {
 
+  Serial.println();
+  Serial.println();
+  Serial.println();
+  Serial.println("Getting Temperature and Humidity");
 
   int humidity_data = (int)dht.readHumidity();
   int temperature_data = (int)dht.readTemperature();
@@ -137,13 +139,21 @@ void loop() {
   Serial.print("Humidity: ");
   Serial.println(humidity_data);
 
+  Serial.println();
+  Serial.println("Sending to Adafruit IO");
   http.beginRequest();
-  std::stringstream ss;
-  ss << "/api/feeds/" << AIO_Temperature_ID << "/data";
-  std::string s = ss.str();  
-  int connectStatus = http.startRequest( AIO_SERVER, AIO_REST_API_PORT, s , HTTP_METHOD_POST, NULL);
+  String s = "/api/feeds/";
+  s += AIO_Temperature_ID;
+  s += "/data";
+  int connectStatus = http.startRequest( AIO_SERVER, AIO_REST_API_PORT, s.c_str() , HTTP_METHOD_POST, NULL);
   http.sendHeader("x-aio-key", AIO_KEY);
+  
+  //client.println();
+  //client.println("\{\"value\": \"678\"\}");
+  //http.sendHeader("value", "34");
+
   http.endRequest();
+  DisplayResponse();
 
   delay(1000);
 }
@@ -167,7 +177,6 @@ void DisplayResponse()
         int bodyLen = http.contentLength();
         Serial.print("Content length is: ");
         Serial.println(bodyLen);
-        Serial.println();
         Serial.println("Body returned follows:");
         
         // Now we've got to the body, so we can print it out
@@ -192,6 +201,8 @@ void DisplayResponse()
              delay(kNetworkDelay);
           }
         }
+        Serial.println("");
+        Serial.println("End of returned body");
       }
       else
       {
