@@ -53,8 +53,12 @@ const int kNetworkDelay = 1000;
 WiFiClient client;
 HttpClient http(client);
 
-void DisplayAllFeeds();
 
+//
+// Home made functions
+//
+void DisplayAllFeeds();
+void PostDataToFeed(const char* ID, int value);
 
 
 
@@ -141,26 +145,53 @@ void loop() {
 
   Serial.println();
   Serial.println("Sending to Adafruit IO");
+
+  PostDataToFeed(AIO_Temperature_ID, temperature_data);
+  DisplayResponse();
+
+  PostDataToFeed(AIO_Humidity_ID, humidity_data);
+  DisplayResponse();
+
+  delay(10000);
+}
+
+
+
+void PostDataToFeed(const char* ID, int value)
+{
+  String postData;
+  postData += "{\n";
+  postData += "\"value\":\"";
+  postData += value;
+  postData += "\",\n";
+  postData += "\"lat\":\"0\",\n";
+  postData += "\"lon\":\"0\",\n";
+  postData += "\"ele\":\"0\"\n";
+  postData += "}\n";
+
+  //Serial.print("postData.length() = ");
+  //Serial.println(postData.length());
+  //Serial.println(postData);
+    
   http.beginRequest();
   String s = "/api/feeds/";
-  s += AIO_Temperature_ID;
+  s += ID;
   s += "/data";
   int connectStatus = http.startRequest( AIO_SERVER, AIO_REST_API_PORT, s.c_str() , HTTP_METHOD_POST, NULL);
   http.sendHeader("x-aio-key", AIO_KEY);
-  
-  //client.println();
-  //client.println("\{\"value\": \"678\"\}");
-  //http.sendHeader("value", "34");
-
+  http.sendHeader("Content-Type", "application/json");
+  http.sendHeader("Accept", "application/json");
+  http.sendHeader("Content-Length", postData.length());
   http.endRequest();
-  DisplayResponse();
-
-  delay(1000);
+  http.print(postData);
 }
+
+
 
 
 void DisplayResponse()
 {
+    Serial.println("Reading response...");
     int statusCode = http.responseStatusCode();
     if (statusCode >= 0)
     {
